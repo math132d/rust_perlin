@@ -1,9 +1,7 @@
 extern crate rand;
 
-mod vector_2d;
-
 use rand::Rng;
-use vector_2d::Vector2D;
+use crate::vector_2d::Vector2D;
 
 pub struct Perlin2D {
     width: u32,
