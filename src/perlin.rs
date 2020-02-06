@@ -125,8 +125,8 @@ impl Perlin2D {
 
 pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u8) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
     let perlin = Perlin2D::new(
-        width/frequency,
-        height/frequency,
+        frequency,
+        frequency,
         octaves,
     );
 
