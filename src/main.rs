@@ -1,33 +1,84 @@
+extern crate clap;
+
 mod vector_2d;
 mod perlin;
 
-//use std::env;
-//use std::path;
-use perlin::Perlin2D;
+use std::process;
+use std::time::Instant;
+use std::path::Path;
+use clap::{Arg, App};
 
 fn main() {
-    perlin_image(256, 256, 32, 1).save("img.png").unwrap();
-}
+    let matches = App::new("Perlin Generator")
+                        .version("1.0")
+                        .arg(Arg::with_name("Width")
+                            .index(1)
+                            .required(true))
+                        .arg(Arg::with_name("Height")
+                            .index(2)
+                            .required(true))
+                        .arg(Arg::with_name("Path")
+                            .index(3)
+                            .required(true))
+                        .arg(Arg::with_name("Frequency")
+                            .short("f")
+                            .takes_value(true))
+                        .arg(Arg::with_name("Octaves")
+                            .short("o")
+                            .takes_value(true))
+                    .get_matches();
 
-fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u8) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
-    let perlin = Perlin2D::new(
-        width/frequency,
-        height/frequency,
-        octaves,
-    );
+    let width: u32 = match matches.value_of("Width").unwrap().parse::<u32>() {
+        Ok(width) => width,
+        Err(err) => panic!(err),
+    };
 
-    let img_buf = image::ImageBuffer::from_fn(width, height, |x, y| {
-        
-        #[allow(unused_parens)]
-        let gray = perlin.noise(
-            (x as f32 / width as f32),
-            (y as f32 / height as f32),
-        );
+    let height: u32 = match matches.value_of("Height").unwrap().parse::<u32>() {
+        Ok(height) => height, 
+        Err(err) => panic!(err),
+    };
 
-        let gray = (gray * 255.0).round() as u8;
-    
-        image::Luma([gray])
-    });
+    let freq: u32 = match matches.value_of("Frequency") {
+        Some(x) => { 
+            match x.parse::<u32>() {
+                Ok(x) => x,
+                Err(_) => {
+                    println!("Frequency must be a valid number!");
+                    width/4
+                },
+            }
+        },
+        None => width/4,
+    };
 
-    img_buf
+    let oct: u8 = match matches.value_of("Octaves") {
+        Some(x) => { 
+            match x.parse::<u8>() {
+                Ok(x) => x,
+                Err(_) => {
+                    println!("Octaves must be a valid number!");
+                    1
+                },
+            }
+        },
+        None => 1,
+    };
+
+    let path: &str = match matches.value_of("Path") {
+        Some(path) => {
+            if Path::new(path).exists() {
+                println!("Image '{}' already exists, choose another name!", path);
+                process::exit(1);
+            }else{
+                path
+            }
+        },
+        None => panic!("Requre path to run")
+    };
+
+    let start = Instant::now();
+
+    perlin::perlin_image(width, height, freq, oct).save(path).unwrap();
+
+    println!("Generated image in {} ms - Saved as '{}'", Instant::now().duration_since(start).as_millis(), path);
 }

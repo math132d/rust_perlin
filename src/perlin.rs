@@ -123,6 +123,29 @@ impl Perlin2D {
     }
 }
 
+pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u8) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
+    let perlin = Perlin2D::new(
+        width/frequency,
+        height/frequency,
+        octaves,
+    );
+
+    let img_buf = image::ImageBuffer::from_fn(width, height, |x, y| {
+        
+        #[allow(unused_parens)]
+        let gray = perlin.noise(
+            (x as f32 / width as f32),
+            (y as f32 / height as f32),
+        );
+
+        let gray = (gray * 255.0).round() as u8;
+    
+        image::Luma([gray])
+    });
+
+    img_buf
+}
+
 fn smooth_interpolation(a: f32, b: f32, s: f32) -> f32{
     a + smoothstep(s) * (b-a)
 }
