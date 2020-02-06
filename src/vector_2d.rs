@@ -5,13 +5,13 @@ pub struct Vector2D{
 
 #[allow(dead_code)]
 impl Vector2D {
-    pub fn dot (&self, vector: &Vector2D) -> f32 {
+    pub fn dot (&self, vector: &Vector2D) -> f32 { //Normalises vectors before dotting
         (self.normalized().x * vector.normalized().x) //x component
         +
         (self.normalized().y * vector.normalized().y) //y component
     }
 
-    pub fn dot_fast (&self, vector: &Vector2D) -> f32 {
+    pub fn dot_fast (&self, vector: &Vector2D) -> f32 { //Assumes already normalised vectors
         (self.x * vector.x) //x component
         +
         (self.y * vector.y) //y component
