@@ -1,5 +1,7 @@
 extern crate rand;
 
+use std::thread::{self, JoinHandle};
+use std::sync::Arc;
 use rand::Rng;
 use crate::vector_2d::Vector2D;
 
@@ -11,8 +13,8 @@ pub struct Perlin2D {
 }
 
 const GAIN: f32 = 0.4;
-const RAND_VECTORS: [Vector2D; 24] = [
-    Vector2D { x: 1.000, y: 0.000},
+const RAND_VECTORS: [Vector2D; 24] = [  //Gen one random number per vector instead of two.
+    Vector2D { x: 1.000, y: 0.000},     //Lookup in this list.
     Vector2D { x: 0.966, y: 0.259},
     Vector2D { x: 0.866, y: 0.500},
     Vector2D { x: 0.707, y: 0.707},
@@ -134,25 +136,68 @@ pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> im
     
     let shortest_side = if width <= height { width } else { height };
     
-    let perlin = Perlin2D::new(
-        frequency,
-        octaves,
+    let perlin : Arc<Perlin2D> = Arc::new(
+        Perlin2D::new(
+            frequency,
+            octaves,
+        )
     );
 
-    let img_buf = image::ImageBuffer::from_fn(width, height, |x, y| {
+    let mut raw_pixels : Vec<u8> = Vec::with_capacity((width * height) as usize);
+
+    let thread_count = 8;
+    let pixels_per_thread = raw_pixels.capacity() / thread_count;
+    let mut thread_handles : Vec<JoinHandle<Vec<u8>>> = Vec::with_capacity(4);
+
+    for thread_idx in 0..thread_handles.capacity() {
+
+        let thread_perlin = Arc::clone(&perlin);
+
+        let thread = thread::spawn(move || {
+            let mut raw_pixel_section : Vec<u8> = Vec::with_capacity(pixels_per_thread);
+
+            let pixel_range = std::ops::Range {
+                start:  pixels_per_thread * thread_idx,
+                end:    pixels_per_thread * (thread_idx+1)
+            };
+
+            for pixel_idx in pixel_range {
+
+                let x = pixel_idx % width as usize;
+                let y = pixel_idx / width as usize;
+
+                let gray = thread_perlin.noise(
+                    x as f32 / shortest_side as f32,
+                    y as f32 / shortest_side as f32,
+                );
         
-        #[allow(unused_parens)]
-        let gray = perlin.noise(
-            (x as f32 / shortest_side as f32),
-            (y as f32 / shortest_side as f32),
-        );
+                raw_pixel_section.push(
+                    (gray * 255.0).round() as u8
+                );
+            }
 
-        let gray = (gray * 255.0).round() as u8;
-    
-        image::Luma([gray])
-    });
+            raw_pixel_section
+        });
 
-    img_buf
+        thread_handles.push(thread);
+    }
+
+    thread_handles.reverse();
+
+    while thread_handles.len() > 0 {
+        let handle = thread_handles.pop().unwrap();
+
+        let mut raw_pixel_section = handle.join().unwrap();
+
+        raw_pixels.append(&mut raw_pixel_section);
+    }
+
+    let img_buf: Option<image::ImageBuffer<image::Luma<u8>, _>> = image::ImageBuffer::from_raw(width, height, raw_pixels);
+
+    match img_buf {
+        Some(image) => image,
+        None => panic!("Couldn't create image from container!"),
+    }
 }
 
 fn smooth_interpolation(a: f32, b: f32, s: f32) -> f32{
