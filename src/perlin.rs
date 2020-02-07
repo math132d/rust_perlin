@@ -12,7 +12,7 @@ pub struct Perlin2D {
     map: Vec<Vector2D>
 }
 
-const GAIN: f32 = 0.4;
+const GAIN: f32 = 0.5;
 const RAND_VECTORS: [Vector2D; 24] = [  //Gen one random number per vector instead of two.
     Vector2D { x: 1.000, y: 0.000},     //Lookup in this list.
     Vector2D { x: 0.966, y: 0.259},
@@ -67,6 +67,8 @@ impl Perlin2D {
         let x = (x - x.floor()) as f32;
         let y = (y - y.floor()) as f32;
 
+        let mut max_gain = 0.0;
+
         for i in 0..self.octaves {
             let octave_size = self.freq * 2u32.pow(i);
 
@@ -77,12 +79,15 @@ impl Perlin2D {
                 octave_size,
             );
 
-            octave *= GAIN.powi((i+1) as i32);
+            let gain = GAIN.powi(i as i32);
+            
+            octave *= gain;
+            max_gain += gain;
 
             gray += octave;
         }
 
-        return gray;
+        return gray / max_gain;
     }
 
 
@@ -145,9 +150,9 @@ pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> im
 
     let mut raw_pixels : Vec<u8> = Vec::with_capacity((width * height) as usize);
 
-    let thread_count = 8;
+    let thread_count = 4;
     let pixels_per_thread = raw_pixels.capacity() / thread_count;
-    let mut thread_handles : Vec<JoinHandle<Vec<u8>>> = Vec::with_capacity(4);
+    let mut thread_handles : Vec<JoinHandle<Vec<u8>>> = Vec::with_capacity(thread_count);
 
     for thread_idx in 0..thread_handles.capacity() {
 
