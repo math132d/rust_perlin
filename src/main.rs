@@ -44,11 +44,11 @@ fn main() {
                 Ok(x) => x,
                 Err(_) => {
                     println!("Frequency must be a valid number!");
-                    width/4
+                    4
                 },
             }
         },
-        None => width/4,
+        None => 4,
     };
 
     let oct: u8 = match matches.value_of("Octaves") {

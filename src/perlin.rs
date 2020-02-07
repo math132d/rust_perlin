@@ -65,8 +65,8 @@ impl Perlin2D {
 
         for i in 0..self.octaves {
             let mut octave = self.basic_noise(
-                x*(i + 1) as f32,
-                y*(i + 1) as f32,
+                x*2u32.pow(i as u32) as f32,
+                y*2u32.pow(i as u32) as f32,
             );
 
             octave *= GAIN.powi((i+1) as i32);
@@ -81,6 +81,7 @@ impl Perlin2D {
     pub fn basic_noise(&self, x: f32, y: f32) -> f32 {
         //Returns noise sampled from p(x, y) between 0 and 1
 
+        //Wrapping x and y to btwn 0 and 1 -> Scales to size
         let x = (x - x.floor()) * self.width as f32;
         let y = (y - y.floor()) * self.height as f32;
 
