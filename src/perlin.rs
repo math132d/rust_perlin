@@ -4,6 +4,7 @@ use rand::Rng;
 use crate::vector_2d::Vector2D;
 
 pub struct Perlin2D {
+    min_width: u32,
     width: u32,
     height: u32,
     octaves: u8,
@@ -40,8 +41,10 @@ const RAND_VECTORS: [Vector2D; 24] = [
 
 impl Perlin2D {
 
-    pub fn new(width: u32, height: u32, octaves: u8) -> Perlin2D {
-        let mut map = Vec::with_capacity((width * height) as usize);
+    pub fn new(min_width: u32, octaves: u8) -> Perlin2D {
+        let size = min_width * 2u32.pow(octaves as u32);
+
+        let mut map = Vec::with_capacity((size * size) as usize);
 
         let mut rng = rand::thread_rng();
 
@@ -50,8 +53,9 @@ impl Perlin2D {
         }
 
         Perlin2D {
-            width, 
-            height,
+            min_width,
+            width: size, //Yes I know this is stupid. It's temporary
+            height: size,
             octaves,
             map,
         }
@@ -65,8 +69,10 @@ impl Perlin2D {
 
         for i in 0..self.octaves {
             let mut octave = self.basic_noise(
-                x*2u32.pow(i as u32) as f32,
-                y*2u32.pow(i as u32) as f32,
+                x as f32,
+                y as f32,
+                self.min_width * 2u32.pow(i as u32),
+                self.min_width * 2u32.pow(i as u32),
             );
 
             octave *= GAIN.powi((i+1) as i32);
@@ -78,12 +84,12 @@ impl Perlin2D {
     }
 
 
-    pub fn basic_noise(&self, x: f32, y: f32) -> f32 {
+    pub fn basic_noise(&self, x: f32, y: f32, gx: u32, gy: u32) -> f32 {
         //Returns noise sampled from p(x, y) between 0 and 1
 
         //Wrapping x and y to btwn 0 and 1 -> Scales to size
-        let x = (x - x.floor()) * self.width as f32;
-        let y = (y - y.floor()) * self.height as f32;
+        let x = (x - x.floor()) * gx as f32;
+        let y = (y - y.floor()) * gy as f32;
 
         let x0: u32 = x.floor() as u32;
         let y0: u32 = y.floor() as u32;
@@ -95,8 +101,8 @@ impl Perlin2D {
 
         // Modified coordinates for left/bottom edge case.
         // Enables tiling of noise
-        let x1_m = if x1 > (self.width-1) { 0 } else { x1 };
-        let y1_m = if y1 > (self.height-1) { 0 } else { y1 };
+        let x1_m = if x1 > (gx-1) { 0 } else { x1 };
+        let y1_m = if y1 > (gy-1) { 0 } else { y1 };
 
         //Top Corners
         let a_vec = self.get_vector(x0, y0).unwrap();
@@ -126,7 +132,6 @@ impl Perlin2D {
 
 pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u8) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
     let perlin = Perlin2D::new(
-        frequency,
         frequency,
         octaves,
     );
