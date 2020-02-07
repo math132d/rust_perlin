@@ -4,10 +4,9 @@ use rand::Rng;
 use crate::vector_2d::Vector2D;
 
 pub struct Perlin2D {
-    min_width: u32,
-    width: u32,
-    height: u32,
-    octaves: u8,
+    freq: u32,
+    size: u32,
+    octaves: u32,
     map: Vec<Vector2D>
 }
 
@@ -41,8 +40,8 @@ const RAND_VECTORS: [Vector2D; 24] = [
 
 impl Perlin2D {
 
-    pub fn new(min_width: u32, octaves: u8) -> Perlin2D {
-        let size = min_width * 2u32.pow(octaves as u32);
+    pub fn new(freq: u32, octaves: u32) -> Perlin2D {
+        let size = freq * 2u32.pow(octaves as u32);
 
         let mut map = Vec::with_capacity((size * size) as usize);
 
@@ -53,9 +52,8 @@ impl Perlin2D {
         }
 
         Perlin2D {
-            min_width,
-            width: size, //Yes I know this is stupid. It's temporary
-            height: size,
+            freq,
+            size,
             octaves,
             map,
         }
@@ -68,11 +66,13 @@ impl Perlin2D {
         let y = (y - y.floor()) as f32;
 
         for i in 0..self.octaves {
+            let octave_size = self.freq * 2u32.pow(i);
+
             let mut octave = self.basic_noise(
                 x as f32,
                 y as f32,
-                self.min_width * 2u32.pow(i as u32),
-                self.min_width * 2u32.pow(i as u32),
+                octave_size,
+                octave_size,
             );
 
             octave *= GAIN.powi((i+1) as i32);
@@ -125,12 +125,12 @@ impl Perlin2D {
     }
 
     fn get_vector(&self, x: u32, y: u32) -> Option<&Vector2D> {
-        let index: usize = (x + y*self.width) as usize;
+        let index: usize = (x + y*self.size) as usize;
         self.map.get(index)
     }
 }
 
-pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u8) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
+pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
     let perlin = Perlin2D::new(
         frequency,
         octaves,

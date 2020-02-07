@@ -51,9 +51,9 @@ fn main() {
         None => 4,
     };
 
-    let oct: u8 = match matches.value_of("Octaves") {
+    let oct: u32 = match matches.value_of("Octaves") {
         Some(x) => { 
-            match x.parse::<u8>() {
+            match x.parse::<u32>() {
                 Ok(x) => x,
                 Err(_) => {
                     println!("Octaves must be a valid number!");
