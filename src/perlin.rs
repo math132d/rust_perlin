@@ -131,6 +131,9 @@ impl Perlin2D {
 }
 
 pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
+    
+    let shortest_side = if width <= height { width } else { height };
+    
     let perlin = Perlin2D::new(
         frequency,
         octaves,
@@ -140,8 +143,8 @@ pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> im
         
         #[allow(unused_parens)]
         let gray = perlin.noise(
-            (x as f32 / width as f32),
-            (y as f32 / height as f32),
+            (x as f32 / shortest_side as f32),
+            (y as f32 / shortest_side as f32),
         );
 
         let gray = (gray * 255.0).round() as u8;
