@@ -1,9 +1,25 @@
 extern crate rand;
 
-use std::thread::{self, JoinHandle};
-use std::sync::Arc;
 use rand::Rng;
-use crate::vector_2d::Vector2D;
+
+pub struct Vector2D{
+    pub x : f32,
+    pub y : f32,
+}
+
+impl Vector2D {
+    pub fn dot_fast (&self, vector: &Vector2D) -> f32 { //Assumes already normalised vectors
+        (self.x * vector.x) //x component
+        +
+        (self.y * vector.y) //y component
+    }
+}
+
+impl Clone for Vector2D {
+    fn clone(&self) -> Self {
+        Vector2D{ x: self.x, y: self.y }
+    }
+}
 
 pub struct Perlin2D {
     freq: u32,
@@ -134,74 +150,6 @@ impl Perlin2D {
     fn get_vector(&self, x: u32, y: u32) -> Option<&Vector2D> {
         let index: usize = (x + y*self.size) as usize;
         self.map.get(index)
-    }
-}
-
-pub fn perlin_image(width: u32, height: u32, frequency: u32, octaves: u32) -> image::ImageBuffer<image::Luma<u8>, Vec<u8>> {
-    
-    let shortest_side = if width <= height { width } else { height };
-    
-    let perlin : Arc<Perlin2D> = Arc::new(
-        Perlin2D::new(
-            frequency,
-            octaves,
-        )
-    );
-
-    let mut raw_pixels : Vec<u8> = Vec::with_capacity((width * height) as usize);
-
-    let thread_count = 4;
-    let pixels_per_thread = raw_pixels.capacity() / thread_count;
-    let mut thread_handles : Vec<JoinHandle<Vec<u8>>> = Vec::with_capacity(thread_count);
-
-    for thread_idx in 0..thread_handles.capacity() {
-
-        let thread_perlin = Arc::clone(&perlin);
-
-        let thread = thread::spawn(move || {
-            let mut raw_pixel_section : Vec<u8> = Vec::with_capacity(pixels_per_thread);
-
-            let pixel_range = std::ops::Range {
-                start:  pixels_per_thread * thread_idx,
-                end:    pixels_per_thread * (thread_idx+1)
-            };
-
-            for pixel_idx in pixel_range {
-
-                let x = pixel_idx % width as usize;
-                let y = pixel_idx / width as usize;
-
-                let gray = thread_perlin.noise(
-                    x as f32 / shortest_side as f32,
-                    y as f32 / shortest_side as f32,
-                );
-        
-                raw_pixel_section.push(
-                    (gray * 255.0).round() as u8
-                );
-            }
-
-            raw_pixel_section
-        });
-
-        thread_handles.push(thread);
-    }
-
-    thread_handles.reverse();
-
-    while thread_handles.len() > 0 {
-        let handle = thread_handles.pop().unwrap();
-
-        let mut raw_pixel_section = handle.join().unwrap();
-
-        raw_pixels.append(&mut raw_pixel_section);
-    }
-
-    let img_buf: Option<image::ImageBuffer<image::Luma<u8>, _>> = image::ImageBuffer::from_raw(width, height, raw_pixels);
-
-    match img_buf {
-        Some(image) => image,
-        None => panic!("Couldn't create image from container!"),
     }
 }
 
