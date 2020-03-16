@@ -83,8 +83,6 @@ impl Perlin2D {
         let x = (x - x.floor()) as f32;
         let y = (y - y.floor()) as f32;
 
-        let mut max_gain = 0.0;
-
         for i in 0..self.octaves {
             let octave_size = self.freq * 2u32.pow(i);
 
@@ -98,12 +96,11 @@ impl Perlin2D {
             let gain = GAIN.powi(i as i32);
             
             octave *= gain;
-            max_gain += gain;
 
             gray += octave;
         }
 
-        return gray / max_gain;
+        return ((gray) + 1.0) / 2.0;
     }
 
 
@@ -144,7 +141,7 @@ impl Perlin2D {
         let btm_dot = smooth_interpolation(a_dot, b_dot, sx);
 
 
-        return  (smooth_interpolation(top_dot, btm_dot, sy) + 1.0) / 2.0;
+        return smooth_interpolation(top_dot, btm_dot, sy);
     }
 
     fn get_vector(&self, x: u32, y: u32) -> Option<&Vector2D> {

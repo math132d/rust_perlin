@@ -1,0 +1,8 @@
+kind: pipeline
+type: docker
+
+steps:
+  - name: perlin
+    image: rust:1.41
+    commands:
+      - cargo test
